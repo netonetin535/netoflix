@@ -1,0 +1,67 @@
+body {
+  background-color: #0f0f0f;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 20px;
+}
+
+h2 {
+  color: #00ff7f;
+  margin-bottom: 20px;
+}
+
+.container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #1b1b1b;
+  border: 2px solid #00ff7f;
+  border-radius: 10px;
+  padding: 15px;
+  width: 300px;
+  box-shadow: 0 0 10px #00ff7f33;
+}
+
+.card img {
+  height: 50px;
+  width: 50px;
+  object-fit: contain;
+}
+
+.teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vs {
+  font-size: 20px;
+  margin: 0 10px;
+}
+
+.info {
+  margin-top: 10px;
+}
+
+.btn {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #00ff7f;
+  color: #000;
+  border: none;
+  border-radius: 5px;
+  cursor: default;
+  font-weight: bold;
+}
+
+.countdown {
+  margin-top: 10px;
+  background: #111;
+  padding: 5px;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 14px;
+}

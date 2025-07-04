@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Ao Vivo com EPG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #111;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .player-container {
+      background: #222;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-wrapper {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .live-indicator {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #e50914;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    .custom-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .video-wrapper:hover .custom-controls {
+      opacity: 1;
+    }
+
+    .custom-controls button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: background-color 0.3s ease;
+    }
+
+    .custom-controls button:hover {
+      background-color: #e50914;
+    }
+
+    .controls {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .controls button {
+      background: #e50914;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .controls button:hover {
+      background: #f40612;
+      transform: scale(1.05);
+    }
+
+    .controls button:active {
+      transform: scale(0.95);
+    }
+
+    .qualities {
+      display: none;
+      background: #333;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .quality {
+      background: #444;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 14px;
+      text-align: center;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .quality:hover {
+      background: #e50914;
+      transform: scale(1.02);
+    }
+
+    .epg {
+      margin-top: 20px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+      color: #fff;
+    }
+
+    .epg p {
+      margin: 10px 0;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .epg strong {
+      color: #e50914;
+      font-weight: 600;
+    }
+
+    .back-button {
+      margin-top: 20px;
+      background: #e50914;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .back-button:hover {
+      background: #f40612;
+      transform: scale(1.05);
+    }
+
+    .back-button:active {
+      transform: scale(0.95);
+    }
+
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      font-weight: 500;
+      display: none;
+      z-index: 10;
+      text-align: center;
+      max-width: 80%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    #loading p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .player-container {
+        padding: 10px;
+      }
+
+      .controls button, .back-button {
+        padding: 8px 15px;
+        font-size: 13px;
+      }
+
+      .quality {
+        padding: 8px;
+        font-size: 13px;
+      }
+
+      .epg {
+        padding: 10px;
+      }
+
+      .epg p {
+        font-size: 13px;
+      }
+
+      #loading {
+        padding: 15px 20px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="player-container">
+    <div class="video-wrapper">
+      <video id="player" autoplay muted controlsList="nodownload nofullscreen noremoteplayback"></video>
+      <div class="live-indicator">Ao Vivo</div>
+      <div class="custom-controls">
+        <button id="muteButton" title="Mutar/Desmutar">🔇</button>
+        <button id="fullscreenButton" title="Tela Cheia">⛶</button>
+      </div>
+      <div id="loading">
+        <p>Reconectando...</p>
+        <p>Se o canal não voltar, verifique sua conexão com a internet ou tente clicar novamente no canal com a qualidade adequada para recarregar o player.</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="toggleQuality">Escolher Qualidade</button>
+    </div>
+
+    <div class="qualities" id="qualities"></div>
+
+    <div class="epg" id="epg">
+      <p><strong>Carregando programação...</strong></p>
+    </div>
+
+    <button class="back-button" onclick="history.back()">Voltar</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const video = document.getElementById("player");
+    const loadingDiv = document.getElementById("loading");
+    const muteButton = document.getElementById("muteButton");
+    const fullscreenButton = document.getElementById("fullscreenButton");
+    const urlParams = new URLSearchParams(location.search);
+    const tvgId = urlParams.get("tvg-id");
+    let hls;
+    let retryCount = 0;
+    const maxRetries = 10;
+    const retryDelayBase = 1000;
+    let lastTime = 0;
+    let isStopped = false;
+    let backupUrls = [];
+
+    // Impedir pausa do vídeo
+    video.addEventListener("pause", () => {
+      video.play().catch(err => console.error("Erro ao tentar retomar reprodução:", err));
+    });
+
+    // Controles personalizados
+    muteButton.addEventListener("click", () => {
+      video.muted = !video.muted;
+      muteButton.textContent = video.muted ? "🔇" : "🔊";
+    });
+
+    fullscreenButton.addEventListener("click", () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        fullscreenButton.textContent = "⛶";
+      } else {
+        video.parentElement.requestFullscreen().catch(err => console.error("Erro ao entrar em tela cheia:", err));
+        fullscreenButton.textContent = "❌";
+      }
+    });
+
+    function parseEPGDate(str) {
+      const match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+      if (!match) return null;
+      const [ , y, mo, d, h, mi, s ] = match;
+      return new Date(`${y}-${mo}-${d}T${h}:${mi}:${s}`);
+    }
+
+    function formatarHorario(date) {
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function mostrarEPG(tvgId) {
+      fetch("xml.json")
+        .then(res => res.json())
+        .then(lista => {
+          const agora = new Date();
+          const epgCanal = lista
+            .filter(p => p.channel === tvgId)
+            .sort((a, b) => parseEPGDate(a.start) - parseEPGDate(b.start));
+
+          let atual = null;
+          let proximo = null;
+
+          for (let i = 0; i < epgCanal.length; i++) {
+            const inicio = parseEPGDate(epgCanal[i].start);
+            const fim = parseEPGDate(epgCanal[i].stop);
+
+            if (agora >= inicio && agora < fim) {
+              atual = epgCanal[i];
+              proximo = epgCanal[i + 1] || null;
+              break;
+            }
+          }
+
+          const epgDiv = document.getElementById("epg");
+          epgDiv.innerHTML = "";
+
+          if (atual) {
+            epgDiv.innerHTML += `
+              <p><strong>Agora:</strong> <br>
+              <b>${atual.title}</b> (${formatarHorario(parseEPGDate(atual.start))} - ${formatarHorario(parseEPGDate(atual.stop))})<br>
+              <small>${atual.description}</small></p>
+            `;
+          }
+
+          if (proximo) {
+            epgDiv.innerHTML += `
+              <p><strong>Próximo:</strong> <br>
+              <b>${proximo.title}</b> (${formatarHorario(parseEPGDate(proximo.start))} - ${formatarHorario(parseEPGDate(proximo.stop))})<br>
+              <small>${proximo.description}</small></p>
+            `;
+          }
+
+          if (!atual && !proximo) {
+            epgDiv.innerHTML = "<p><em>Sem programação disponível no momento.</em></p>";
+          }
+        })
+        .catch(err => {
+          console.error("Erro ao carregar EPG:", err);
+          document.getElementById("epg").innerHTML = "<p><em>Erro ao carregar programação.</em></p>";
+        });
+    }
+
+    async function carregarPlayer(tvgId) {
+      const response = await fetch("canais.json");
+      const lista = await response.json();
+      const canais = lista.filter(c => c["tvg-id"] === tvgId);
+      if (!canais.length) {
+        alert("Canal não encontrado.");
+        return;
+      }
+
+      backupUrls = canais.map(c => c["stream-url"]);
+      const qualityDiv = document.getElementById("qualities");
+
+      qualityDiv.innerHTML = "";
+      canais.forEach(canal => {
+        const el = document.createElement("div");
+        el.className = "quality";
+        el.innerText = canal["tvg-name"];
+        el.onclick = () => carregarStream(canal["stream-url"]);
+        qualityDiv.appendChild(el);
+      });
+
+      await carregarStream(backupUrls[0]);
+    }
+
+    async function carregarStream(url) {
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+
+      if (Hls.isSupported()) {
+        hls = new Hls({
+          maxBufferLength: 120,
+          maxMaxBufferLength: 600,
+          maxBufferSize: 120 * 1000 * 1000,
+          liveSyncDurationCount: 6,
+          liveMaxLatencyDurationCount: 15,
+          autoStartLoad: true,
+          maxFragLookUpTolerance: 0.2,
+          xhrSetup: (xhr) => {
+            xhr.withCredentials = false;
+          }
+        });
+
+        hls.loadSource(url);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(err => console.error("Erro ao iniciar reprodução:", err));
+          loadingDiv.style.display = "none";
+          retryCount = 0;
+          lastTime = video.currentTime;
+          isStopped = false;
+        });
+
+        hls.on(Hls.Events.ERROR, async (event, data) => {
+          console.error("Erro HLS:", data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                if (data.details === "levelLoadError" && data.response && data.response.code === 404) {
+                  console.log("URL 404 detectada, tentando próxima fonte...");
+                  await switchToNextUrl();
+                } else if (retryCount < maxRetries) {
+                  console.log(`Tentativa de reconexão ${retryCount + 1}/${maxRetries}`);
+                  if (isStopped) loadingDiv.style.display = "block";
+                  await new Promise(resolve => setTimeout(resolve, retryDelayBase * Math.pow(2, retryCount - 1)));
+                  hls.startLoad();
+                  retryCount++;
+                } else {
+                  console.error("Máximo de tentativas atingido, tentando próxima fonte...");
+                  await switchToNextUrl();
+                }
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log("Erro de mídia, tentando recuperar...");
+                hls.recoverMediaError();
+                loadingDiv.style.display = "none";
+                retryCount = 0;
+                isStopped = false;
+                break;
+              default:
+                console.error("Erro fatal não tratado:", data);
+                await switchToNextUrl();
+                break;
+            }
+          }
+        });
+
+        hls.on(Hls.Events.BUFFER_APPENDING, () => {
+          if (video.readyState >= 2) {
+            loadingDiv.style.display = "none";
+            isStopped = false;
+          }
+        });
+
+        video.addEventListener("timeupdate", () => {
+          if (video.readyState < 2 && video.currentTime === lastTime && !isStopped) {
+            isStopped = true;
+            loadingDiv.style.display = "block";
+            hls.startLoad();
+          } else if (video.readyState >= 2 && video.currentTime > lastTime) {
+            loadingDiv.style.display = "none";
+            isStopped = false;
+          }
+          lastTime = video.currentTime;
+        });
+
+        setInterval(() => {
+          if (video.readyState >= 2 && !video.paused && !video.ended) {
+            loadingDiv.style.display = "none";
+            isStopped = false;
+          } else if (video.readyState < 2 && isStopped) {
+            hls.startLoad();
+          }
+        }, 2000);
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = url;
+        video.play().catch(err => console.error("Erro ao iniciar reprodução nativa:", err));
+        loadingDiv.style.display = "none";
+      }
+    }
+
+    async function switchToNextUrl() {
+      if (backupUrls.length > 1) {
+        backupUrls.shift();
+        const nextUrl = backupUrls[0];
+        if (nextUrl) {
+          console.log("Trocando para URL de backup:", nextUrl);
+          await carregarStream(nextUrl);
+          retryCount = 0;
+          return;
+        }
+      }
+      console.error("Nenhuma URL de backup disponível.");
+      loadingDiv.style.display = "block";
+    }
+
+    document.getElementById("toggleQuality").onclick = () => {
+      const div = document.getElementById("qualities");
+      div.style.display = div.style.display === "none" ? "block" : "none";
+    };
+
+    if (tvgId) {
+      carregarPlayer(tvgId);
+      mostrarEPG(tvgId);
+    } else {
+      alert("Canal não especificado.");
+    }
+  </script>
+</body>
+</html>

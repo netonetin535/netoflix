@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assistir Filme</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      font-family: 'Roboto', sans-serif;
+      overflow: hidden;
+    }
+    #player-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #000;
+      transition: filter 0.3s ease; /* Transição suave para o filtro */
+    }
+    /* Filtro de upscale */
+    video.upscaled {
+      filter: brightness(1.2) contrast(1.5) saturate(1.2) sharpen(2);
+    }
+    #video-title {
+      position: absolute;
+      top: 15px;
+      width: 100%;
+      text-align: center;
+      color: #fff;
+      font-size: 1.3rem;
+      z-index: 10;
+      text-shadow: 0 0 5px #000;
+    }
+    .btn-voltar {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .controls-overlay {
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform: translateY(-50%);
+      gap: 60px;
+      z-index: 10;
+    }
+    .circle-btn {
+      background-color: rgba(255,255,255,0.1);
+      border: 2px solid #fff;
+      color: white;
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: transform 0.3s ease-in-out, background-color 0.2s ease, box-shadow 0.3s ease;
+    }
+    .circle-btn:hover {
+      transform: scale(1.2);
+      background-color: #e50914;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
+    .pause-btn {
+      background-color: #00cc99;
+      border: none;
+      color: white;
+      font-size: 2rem;
+    }
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 0.9rem;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      width: 100%;
+      position: absolute;
+      bottom: 60px;
+      left: 0;
+    }
+    .progress-bar {
+      position: relative;
+      flex-grow: 1;
+      height: 8px;
+      background: #555;
+      border-radius: 4px;
+      margin: 0 12px;
+      overflow: hidden;
+      pointer-events: all;
+      cursor: pointer;
+    }
+    .progress {
+      height: 100%;
+      background: #e50914;
+      width: 0%;
+      transition: width 0.2s ease-out, background 0.2s ease-out;
+    }
+    .bottom-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .bottom-buttons button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #fff;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 18px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+    .bottom-buttons button:hover {
+      background: #e50914;
+      transform: scale(1.1);
+    }
+    .dica {
+      position: absolute;
+      bottom: 90px;
+      width: 100%;
+      text-align: center;
+      color: #ccc;
+      font-size: 0.8rem;
+    }
+    .loading {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #ffffff30;
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #volume-slider {
+      width: 100px;
+      height: 6px;
+      background: #555;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    #volume-slider::-webkit-slider-thumb {
+      width: 16px;
+      height: 16px;
+      background: #e50914;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    #volume-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: #e50914;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    button:focus {
+      outline: 2px solid #00cc99;
+      box-shadow: 0 0 10px #00cc99;
+    }
+    /* Mudar a cor do tempo para branco */
+    #currentTime, #duration {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="player-container">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+    </div>
+    <div id="video-title">Carregando título...</div>
+    <button class="btn-voltar" onclick="history.back()"><i class="fas fa-arrow-left"></i> Voltar</button>
+    <video id="player" autoplay></video>
+    <div class="controls-overlay">
+      <button class="circle-btn" onclick="seek(-10)"><i class="fas fa-backward"></i></button>
+      <button class="circle-btn pause-btn" onclick="togglePlay()" id="playPause"><i class="fas fa-play"></i></button>
+      <button class="circle-btn" onclick="seek(10)"><i class="fas fa-forward"></i></button>
+    </div>
+    <div class="dica">Mantenha pressionados os botões de seta no seu controle para retroceder e avançar</div>
+    <div id="subtitle-display"></div>
+    <div class="progress-container">
+      <span id="currentTime">00:00</span>
+      <div class="progress-bar" id="progressBar">
+        <div class="progress" id="progress"></div>
+      </div>
+      <span id="duration">--:--</span>
+    </div>
+    <div class="bottom-bar">
+      <div class="bottom-buttons">
+        <button onclick="toggleVolume()"><i class="fas fa-volume-up"></i> Volume</button>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" onchange="setVolume(this.value)" />
+        <button onclick="toggleSize()"><i class="fas fa-compress-arrows-alt"></i> Tamanho original</button>
+        <button onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Tela cheia</button>
+        <button onclick="toggleSpeed()"><i class="fas fa-tachometer-alt"></i> Velocidade</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+    const player = document.getElementById("player");
+    const loading = document.getElementById("loading");
+    const progress = document.getElementById("progress");
+    const currentTimeDisplay = document.getElementById("currentTime");
+    const durationDisplay = document.getElementById("duration");
+    const titleEl = document.getElementById("video-title");
+    const playPauseBtn = document.getElementById("playPause");
+    const progressBar = document.getElementById("progressBar");
+    const volumeSlider = document.getElementById("volume-slider");
+
+    let lastTime = localStorage.getItem(`pos_${id}`) || 0;
+    player.currentTime = lastTime;
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    if (!id) {
+      document.getElementById("player-container").innerHTML = "<div style='color:#fff;padding:30px;text-align:center;'>ID do filme não especificado na URL.</div>";
+    } else {
+      const videoUrl = `http://tconect.top:80/movie/544484333/642967615/${id}.mp4`;
+      player.src = videoUrl;
+      titleEl.innerText = document.title;
+
+      player.addEventListener("loadeddata", () => {
+        loading.style.display = "none";
+        durationDisplay.innerText = formatTime(player.duration);
+      });
+
+      player.addEventListener("timeupdate", () => {
+        const percent = (player.currentTime / player.duration) * 100;
+        progress.style.width = `${percent}%`;
+        currentTimeDisplay.innerText = formatTime(player.currentTime);
+      });
+
+      player.addEventListener("ended", () => {
+        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        salvarFilmeAssistido({
+          tmdb_id: id,
+          title: document.title,
+          poster_path: player.src
+        });
+      });
+
+      player.addEventListener("error", () => {
+        loading.style.display = "none";
+        document.getElementById("player-container").innerHTML = "<div style='color:#fff;padding:30px;text-align:center;'>Não foi possível carregar o vídeo.</div>";
+      });
+    }
+
+    function seek(seconds) {
+      player.currentTime += seconds;
+    }
+
+    function togglePlay() {
+      if (player.paused) {
+        player.play();
+        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      } else {
+        player.pause();
+        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+      }
+    }
+
+    function toggleFullscreen() {
+      const el = document.documentElement;
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function toggleVolume() {
+      player.muted = !player.muted;
+      volumeSlider.value = player.muted ? 0 : player.volume;
+    }
+
+    function setVolume(value) {
+      player.volume = value;
+      player.muted = false;
+    }
+
+    function toggleSize() {
+      if (player.style.objectFit === "contain") {
+        player.style.objectFit = "fill";
+      } else {
+        player.style.objectFit = "contain";
+      }
+    }
+
+    function toggleSpeed() {
+      let speed = player.playbackRate;
+      speed = (speed === 2) ? 0.5 : speed + 0.5;
+      player.playbackRate = speed;
+    }
+
+    function salvarFilmeAssistido(filme) {
+      let historico = JSON.parse(localStorage.getItem('historicoFilmes')) || [];
+      if (!historico.some(f => f.tmdb_id === filme.tmdb_id)) {
+        historico.push(filme);
+        localStorage.setItem('historicoFilmes', JSON.stringify(historico));
+      }
+    }
+
+    window.onbeforeunload = () => {
+      localStorage.setItem(`pos_${id}`, player.currentTime);
+    };
+
+    progressBar.addEventListener('click', (e) => {
+      if (player.duration && !isNaN(player.duration)) {
+        const rect = progressBar.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        const percent = clickX / width;
+        const newTime = percent * player.duration;
+        player.currentTime = newTime;
+        progress.style.width = `${(newTime / player.duration) * 100}%`;
+      }
+    });
+  </script>
+</body>
+</html>
