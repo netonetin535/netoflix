@@ -29,11 +29,20 @@
       height: 100%;
       object-fit: contain;
       background-color: #000;
-      transition: filter 0.3s ease; /* Transição suave para o filtro */
+      transition: filter 0.3s ease;
     }
-    /* Filtro de upscale */
     video.upscaled {
       filter: brightness(1.2) contrast(1.5) saturate(1.2) sharpen(2);
+    }
+    #interface {
+      transition: opacity 0.4s ease;
+    }
+    #interface.oculto {
+      opacity: 0;
+      pointer-events: none;
+    }
+    body.oculto-cursor {
+      cursor: none;
     }
     #video-title {
       position: absolute;
@@ -188,13 +197,7 @@
       border-radius: 3px;
       cursor: pointer;
     }
-    #volume-slider::-webkit-slider-thumb {
-      width: 16px;
-      height: 16px;
-      background: #e50914;
-      border-radius: 50%;
-      cursor: pointer;
-    }
+    #volume-slider::-webkit-slider-thumb,
     #volume-slider::-moz-range-thumb {
       width: 16px;
       height: 16px;
@@ -206,7 +209,6 @@
       outline: 2px solid #00cc99;
       box-shadow: 0 0 10px #00cc99;
     }
-    /* Mudar a cor do tempo para branco */
     #currentTime, #duration {
       color: #fff;
     }
@@ -214,33 +216,35 @@
 </head>
 <body>
   <div id="player-container">
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-    </div>
-    <div id="video-title">Carregando título...</div>
-    <button class="btn-voltar" onclick="history.back()"><i class="fas fa-arrow-left"></i> Voltar</button>
+    <div id="loading" class="loading"><div class="spinner"></div></div>
+
     <video id="player" autoplay></video>
-    <div class="controls-overlay">
-      <button class="circle-btn" onclick="seek(-10)"><i class="fas fa-backward"></i></button>
-      <button class="circle-btn pause-btn" onclick="togglePlay()" id="playPause"><i class="fas fa-play"></i></button>
-      <button class="circle-btn" onclick="seek(10)"><i class="fas fa-forward"></i></button>
-    </div>
-    <div class="dica">Mantenha pressionados os botões de seta no seu controle para retroceder e avançar</div>
-    <div id="subtitle-display"></div>
-    <div class="progress-container">
-      <span id="currentTime">00:00</span>
-      <div class="progress-bar" id="progressBar">
-        <div class="progress" id="progress"></div>
+
+    <!-- TUDO dentro de #interface será ocultado após 3s -->
+    <div id="interface">
+      <div id="video-title">Carregando título...</div>
+      <button class="btn-voltar" onclick="history.back()"><i class="fas fa-arrow-left"></i> Voltar</button>
+      <div class="controls-overlay">
+        <button class="circle-btn" onclick="seek(-10)"><i class="fas fa-backward"></i></button>
+        <button class="circle-btn pause-btn" onclick="togglePlay()" id="playPause"><i class="fas fa-play"></i></button>
+        <button class="circle-btn" onclick="seek(10)"><i class="fas fa-forward"></i></button>
       </div>
-      <span id="duration">--:--</span>
-    </div>
-    <div class="bottom-bar">
-      <div class="bottom-buttons">
-        <button onclick="toggleVolume()"><i class="fas fa-volume-up"></i> Volume</button>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" onchange="setVolume(this.value)" />
-        <button onclick="toggleSize()"><i class="fas fa-compress-arrows-alt"></i> Tamanho original</button>
-        <button onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Tela cheia</button>
-        <button onclick="toggleSpeed()"><i class="fas fa-tachometer-alt"></i> Velocidade</button>
+      <div class="dica">Mantenha pressionados os botões de seta no seu controle para retroceder e avançar</div>
+      <div class="progress-container">
+        <span id="currentTime">00:00</span>
+        <div class="progress-bar" id="progressBar">
+          <div class="progress" id="progress"></div>
+        </div>
+        <span id="duration">--:--</span>
+      </div>
+      <div class="bottom-bar">
+        <div class="bottom-buttons">
+          <button onclick="toggleVolume()"><i class="fas fa-volume-up"></i> Volume</button>
+          <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" onchange="setVolume(this.value)" />
+          <button onclick="toggleSize()"><i class="fas fa-compress-arrows-alt"></i> Tamanho original</button>
+          <button onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Tela cheia</button>
+          <button onclick="toggleSpeed()"><i class="fas fa-tachometer-alt"></i> Velocidade</button>
+        </div>
       </div>
     </div>
   </div>
@@ -334,11 +338,7 @@
     }
 
     function toggleSize() {
-      if (player.style.objectFit === "contain") {
-        player.style.objectFit = "fill";
-      } else {
-        player.style.objectFit = "contain";
-      }
+      player.style.objectFit = (player.style.objectFit === "contain") ? "fill" : "contain";
     }
 
     function toggleSpeed() {
@@ -365,11 +365,29 @@
         const clickX = e.clientX - rect.left;
         const width = rect.width;
         const percent = clickX / width;
-        const newTime = percent * player.duration;
-        player.currentTime = newTime;
-        progress.style.width = `${(newTime / player.duration) * 100}%`;
+        player.currentTime = percent * player.duration;
       }
     });
+
+    // 👇 Sistema de inatividade (ocultar interface e cursor)
+    let inactivityTimer;
+    const interfaceEl = document.getElementById("interface");
+
+    function mostrarInterface() {
+      interfaceEl.classList.remove("oculto");
+      document.body.classList.remove("oculto-cursor");
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        interfaceEl.classList.add("oculto");
+        document.body.classList.add("oculto-cursor");
+      }, 3000);
+    }
+
+    ['mousemove', 'keydown', 'click', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, mostrarInterface);
+    });
+
+    mostrarInterface(); // iniciar
   </script>
 </body>
 </html>
